@@ -1,0 +1,44 @@
+name: Bump
+
+# Keep Formula/reses.rb on the latest spdrman/reses release. Every six hours (and on demand) I
+# run scripts/bump.sh; when it rewrites the formula, I audit it, prove it installs, and only then
+# commit it. The commit is made by github-actions[bot], so no personal address lands in history.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # main
+      - id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$(brew --repository spdrman/reses)"
+          new=$(scripts/bump.sh)
+          echo "version=$new" >> "$GITHUB_OUTPUT"
+      - if: steps.bump.outputs.version != ''
+        run: |
+          brew audit --strict --online spdrman/reses/reses
+          brew reinstall --verbose spdrman/reses/reses
+          brew test --verbose spdrman/reses/reses
+      - if: steps.bump.outputs.version != ''
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          cd "$(brew --repository spdrman/reses)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/reses.rb
+          git commit -m "reses $VERSION"
+          git push origin HEAD:main

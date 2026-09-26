@@ -1,0 +1,27 @@
+name: Tests
+
+# Audit the formula and prove it installs and passes its test block, on macOS (Apple Silicon)
+# and Linux, for every push and pull request. The tap is checked out as itself, so
+# `spdrman/reses/reses` resolves to this commit's formula.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: Install and test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # main
+      - run: brew audit --strict --online spdrman/reses/reses
+      - run: brew install --verbose spdrman/reses/reses
+      - run: brew test --verbose spdrman/reses/reses
+      - run: reses --version

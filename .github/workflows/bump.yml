@@ -1,15 +1,19 @@
 name: Bump
 
 # Keep Formula/reses.rb on the latest spdrman/reses release. Every six hours (and on demand) I
-# run scripts/bump.sh; when it rewrites the formula, I audit it, prove it installs, and only then
-# commit it. The commit is made by github-actions[bot], so no personal address lands in history.
+# rewrite the formula with scripts/bump.sh and prove the result on every platform before
+# anything is committed.
+#
+# The jobs that download and run the new release only hold a read token. The one job that can
+# write runs nothing from the release: it checks the change touches only url and sha256 lines,
+# then commits it as github-actions[bot]. So even a tampered release can't write to this tap.
 on:
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: bump
@@ -17,7 +21,10 @@ concurrency:
 
 jobs:
   bump:
+    name: Bump and test on macOS
     runs-on: macos-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
     steps:
       - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # main
       - id: bump
@@ -30,13 +37,54 @@ jobs:
       - if: steps.bump.outputs.version != ''
         run: |
           brew audit --strict --online spdrman/reses/reses
-          brew reinstall --verbose spdrman/reses/reses
+          brew install --verbose spdrman/reses/reses
           brew test --verbose spdrman/reses/reses
+          cp "$(brew --repository spdrman/reses)/Formula/reses.rb" reses.rb
       - if: steps.bump.outputs.version != ''
-        env:
-          VERSION: ${{ steps.bump.outputs.version }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: formula
+          path: reses.rb
+          if-no-files-found: error
+
+  linux:
+    name: Test on ${{ matrix.os }}
+    needs: bump
+    if: needs.bump.outputs.version != ''
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # main
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: formula
+      - run: |
+          cp reses.rb "$(brew --repository spdrman/reses)/Formula/reses.rb"
+          brew install --verbose spdrman/reses/reses
+          brew test --verbose spdrman/reses/reses
+
+  commit:
+    name: Commit the bump
+    needs: [bump, linux]
+    if: needs.bump.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: formula
+          path: new
+      - env:
+          VERSION: ${{ needs.bump.outputs.version }}
         run: |
-          cd "$(brew --repository spdrman/reses)"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "::error::unexpected version '$VERSION'"; exit 1; }
+          # The change may only touch url and sha256 lines.
+          diff Formula/reses.rb new/reses.rb | grep -E '^[<>]' | grep -vE '^[<>] +(url|sha256) "' && { echo "::error::the bump changed more than url and sha256 lines"; exit 1; }
+          cp new/reses.rb Formula/reses.rb
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/reses.rb

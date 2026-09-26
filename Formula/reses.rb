@@ -16,6 +16,8 @@ class Reses < Formula
   end
 
   on_macos do
+    # The macOS release is Apple Silicon only, so an Intel Mac gets a clear refusal.
+    depends_on arch: :arm64
     on_arm do
       url "https://github.com/spdrman/reses/releases/download/v0.2.0/reses-v0.2.0-aarch64-apple-darwin.tar.gz"
       sha256 "f93357f69e7a63a3ae893aad823dcf840b3229a884b95112380d8feda2dd88b3"

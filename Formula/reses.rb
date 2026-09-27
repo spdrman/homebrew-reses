@@ -19,19 +19,19 @@ class Reses < Formula
     # The macOS release is Apple Silicon only, so an Intel Mac gets a clear refusal.
     depends_on arch: :arm64
     on_arm do
-      url "https://github.com/spdrman/reses/releases/download/v0.2.2/reses-v0.2.2-aarch64-apple-darwin.tar.gz"
-      sha256 "4be3fc756f3e8cc2651b9b6a0c2df89b72148c0f5855adec07b3341aab005213"
+      url "https://github.com/spdrman/reses/releases/download/v0.2.3/reses-v0.2.3-aarch64-apple-darwin.tar.gz"
+      sha256 "97f75f797ffff95c5370f338c0eb77af84ea3be0e1033e0abdfabd270769dc2c"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/spdrman/reses/releases/download/v0.2.2/reses-v0.2.2-aarch64-unknown-linux-musl.tar.gz"
-      sha256 "1fc4c8a0b19d499522a8afc8f3225d390036c7354f15bcc3974d4565aaab1c0a"
+      url "https://github.com/spdrman/reses/releases/download/v0.2.3/reses-v0.2.3-aarch64-unknown-linux-musl.tar.gz"
+      sha256 "03e9112250ada0e31b549c5ca1453f28aa0e2e8dd807609868cd4cba92de86f8"
     end
     on_intel do
-      url "https://github.com/spdrman/reses/releases/download/v0.2.2/reses-v0.2.2-x86_64-unknown-linux-musl.tar.gz"
-      sha256 "d2ae62d96864f233425713b58ea2296a3fd557061a0cd463479321e05345b1c3"
+      url "https://github.com/spdrman/reses/releases/download/v0.2.3/reses-v0.2.3-x86_64-unknown-linux-musl.tar.gz"
+      sha256 "c89e37058e2c72f881201c6354433c65d0b14c88372344cdfcfaed6acb66c03e"
     end
   end
 

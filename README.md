@@ -12,4 +12,4 @@ It works on macOS (Apple Silicon) and Linux (x86_64 and arm64). The formula inst
 
 ## How it stays current
 
-`Formula/reses.rb` pins one release's archives by URL and sha256, the way Homebrew expects. Every six hours the Bump workflow runs `scripts/bump.sh`. When there's a newer reses release, it rewrites those lines from that release's `SHA256SUMS`, audits the formula, installs and tests it, and only then commits. The Tests workflow audits, installs and tests the formula on macOS and Linux for every push.
+`Formula/reses.rb` pins one release's archives by URL and sha256, the way Homebrew expects. After a release is published, the reses release workflow dispatches this tap's guarded bump workflow. It updates the formula from that release's `SHA256SUMS`, audits, installs and tests it, then commits only after macOS and Linux tests pass. A six-hour schedule is the fallback if dispatch is unavailable. `brew install spdrman/reses/reses` and `brew upgrade` use the latest version committed to this formula; the tap does not currently provide versioned `reses@…` formulas for selecting an older release.
